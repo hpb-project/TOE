@@ -711,7 +711,7 @@ endinterface : if_tcpr_tbl_rdat
 
 
 
-interface if_tcp_toe_reg;
+interface if_tcp_reg_toe;
 
 logic [00:00]  cfg_clr_cnt           ;
 logic [31:00]  cfg_toe_mode          ;
@@ -771,7 +771,7 @@ modport sink( input  cfg_clr_cnt, cfg_toe_mode,
         cfg_write_bd_low_th, cfg_read_bd_low_th, cfg_write_bd_high_th, cfg_read_bd_high_th ,
         cfg_ckserr_drop_en );
 
-endinterface : if_tcp_toe_reg
+endinterface : if_tcp_reg_toe
 
 
 
