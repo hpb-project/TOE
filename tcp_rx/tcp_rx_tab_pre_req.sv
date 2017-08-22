@@ -7,7 +7,7 @@ module tcp_rx_tab_pre_req #(
 		input	  wire				           clk		 	                          ,
 		input 	wire				           rst			                          ,
     input   wire	                 flag_toe_exit                      ,
-	  if_cfg_reg_toe.sink  u_if_cfg_reg_toe ,
+	  if_tcp_reg_toe.sink  u_if_tcp_reg_toe ,
 	  if_dbg_reg_toe       u_if_dbg_reg_toe ,
 		input 	wire				           in_pd_vld		                      ,
 		input 	wire	[PDWID-1:0]		   in_pd_dat		                      ,
@@ -30,9 +30,9 @@ cpkt_unf #(
 )inst_cpkt_unf(
 	.clk     		      ( clk			        ), 
 	.rst    		      ( rst	 		        ),
-	.cpkt_vld 		    ( in_pd_vld		    ),	
-	.cpkt_dat 		    ( in_pd_dat		    ),	
-	.cpkt_msg 		    ( 1'b0			      ),	
+	.cell_vld 		    ( in_pd_vld		    ),	
+	.cell_dat 		    ( in_pd_dat		    ),	
+	.cell_msg 		    ( 1'b0			      ),	
  	.total_cpkt_vld 	( total_pd_vld  	), 
 	.total_cpkt_dat 	( total_pd_dat  	), 
 	.total_cpkt_msg 	(       		      ) 
@@ -41,8 +41,8 @@ cpkt_unf #(
 `include "pkt_des_unpack.v"
 wire				           in_pd_vld_d4		                      ;
 wire	[PDWID-1:0]		   in_pd_dat_d4		                      ;
-ctrl_pipe #( .DWID(1)    , .DLY_NUM(PDSZ) ) u_ctrl_in_pd_vld( .clk(clk), .rst(rst), .din( in_pd_vld ), .dout( in_pd_vld_d4 ) );
-data_pipe #( .DWID(PDWID), .DLY_NUM(PDSZ) ) u_ctrl_in_pd_dat( .clk(clk), .rst(rst), .din( in_pd_dat ), .dout( in_pd_dat_d4 ) );
+ctrl_dly #( .DWID(1)    , .DLY_NUM(PDSZ) ) u_ctrl_in_pd_vld( .clk(clk), .rst(rst), .din( in_pd_vld ), .dout( in_pd_vld_d4 ) );
+data_dly #( .DWID(PDWID), .DLY_NUM(PDSZ) ) u_ctrl_in_pd_dat( .clk(clk), .rst(rst), .din( in_pd_dat ), .dout( in_pd_dat_d4 ) );
 wire [15:0]    pkt_fid;
 assign pkt_fid = (pd_fwd==VAL_FWD_MAC) ? {12'h0, pd_chn_id[3:0]} : pd_tcp_fid;
 work_cpkt_ctrl  #(
@@ -66,7 +66,7 @@ work_cpkt_ctrl  #(
     .out_data ( out_pd_dat    ),
     .out_vld  ( out_pd_vld    ),
     .out_rdy  ( out_pd_rdy    ),
-		.cfg_cpkt_gap ( {16'h0, u_if_cfg_reg_toe.cfg_toe_mode_cpkt_gap[15:0]}  ), 
+		.cfg_cpkt_gap ( {16'h0, u_if_tcp_reg_toe.cfg_toe_mode_cell_gap[15:0]}  ), 
     .dbg_sig  (               )
 );
 assign dbg_sig = 32'h0;

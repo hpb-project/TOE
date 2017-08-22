@@ -51,7 +51,7 @@ module tcp_rx #(
     input   wire [31:0]       cfg_tcp_age_time   ,           
     input   wire [31:0]       cfg_moe_bd_th     ,           
     input   S_MOE_RX_FIFO_ST  moe_rx_fifo_st     ,
-    if_tcp_toe_reg.sink  u_if_tcp_toe_reg ,
+    if_tcp_reg_toe.sink  u_if_tcp_reg_toe ,
     if_dbg_reg_toe       u_if_dbg_reg_toe ,
     output  wire [32*2-1:0]    tcp_rx_tab_act_dbg_sig1    ,  
     output  wire [DBG_WID-1:0]    tcp_rx_tab_act_dbg_sig    ,  
@@ -81,7 +81,7 @@ cpkt_fifo_mux #(
 ) u_tcp_rx_cpkt_mux (
    .clk                ( clk                ),
    .rst                ( rst                ),
-   .clr_cnt    ( u_if_tcp_toe_reg.cfg_clr_cnt ),
+   .clr_cnt    ( u_if_tcp_reg_toe.cfg_clr_cnt ),
    .fst_in_vld            ( in_pd_vld          ),
    .fst_in_dat            ( in_pd_dat          ),
    .fst_in_rdy            ( in_pd_rdy          ),
@@ -103,7 +103,7 @@ tcp_rx_tcpkt_mix #(
 )u_tcp_rx_tcpkt_mix(
   .clk         ( clk            ), 
   .rst        ( rst            ),
-  .u_if_tcp_toe_reg    (u_if_tcp_toe_reg   ),
+  .u_if_tcp_reg_toe    (u_if_tcp_reg_toe   ),
   .in_pd_vld    ( mux_pd_vld    ),
   .in_pd_rdy    ( mux_pd_rdy    ),
   .in_pd_dat    ( mux_pd_dat    ),
@@ -124,7 +124,7 @@ tcp_rx_tab_pre_req #(
   .clk         ( clk            ), 
   .rst        ( rst            ),
   .flag_toe_exit    ( flag_toe_exit    ),
-  .u_if_tcp_toe_reg    (u_if_tcp_toe_reg   ),
+  .u_if_tcp_reg_toe    (u_if_tcp_reg_toe   ),
   .u_if_dbg_reg_toe    (u_if_dbg_reg_toe   ),
   .in_pd_vld    ( mix_pd_vld    ),
   .in_pd_rdy    ( mix_pd_rdy    ),
@@ -342,11 +342,11 @@ tcp_rx_table_act #(
   .cfg_tcp_age_time      ( cfg_tcp_age_time    ),
   .cfg_moe_bd_th         ( cfg_moe_bd_th       ),
   .moe_rx_fifo_st        ( moe_rx_fifo_st      ),
-  .u_if_tcp_toe_reg      ( u_if_tcp_toe_reg    ),
+  .u_if_tcp_reg_toe      ( u_if_tcp_reg_toe    ),
   .u_if_dbg_reg_toe      ( u_if_dbg_reg_toe    ),
   .dbg_sig1              ( tcp_rx_tab_act_dbg_sig1 ),
   .dbg_sig               ( tcp_rx_tab_act_dbg_sig  )
 );
 assign dbg_sig = 32'h0;
-assign u_if_dbg_reg_toe.tcp_rx_fifo_nafull = { 23'h0, tab_wdat_fifo_nafull, tab_wr_fifo_nafull, sync_msg_rdy, out_pkt_rdy, out_pmem_rdy, in_pd_rdy, loop_pd_rdy, mux_pd_rdy, mix_pd_rdy, pre_pd_rdy, tab_rreq_fifo_nafull, tab_msg_fifo_nafull, pd_fifo_nafull, out_pd_rdy };
+assign u_if_dbg_reg_toe.tcpr_fifo_nafull = { 23'h0, tab_wdat_fifo_nafull, tab_wr_fifo_nafull, sync_msg_rdy, out_pkt_rdy, out_pmem_rdy, in_pd_rdy, loop_pd_rdy, mux_pd_rdy, mix_pd_rdy, pre_pd_rdy, tab_rreq_fifo_nafull, tab_msg_fifo_nafull, pd_fifo_nafull, out_pd_rdy };
 endmodule

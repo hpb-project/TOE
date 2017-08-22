@@ -277,7 +277,7 @@ module tcp_rx_tcpkt_mix #(
 ) (
 		input	  wire				           clk		 	                          ,
 		input 	wire				           rst			                          ,
-    if_tcp_toe_reg.sink            u_if_tcp_toe_reg ,
+    if_tcp_cfg_reg.sink            u_if_tcp_cfg_reg ,
 		input 	wire				           in_pd_vld		                      ,
 		input 	wire	[PDWID-1:0]		       in_pd_dat		                      ,
 		output 	wire				           in_pd_rdy 		                      ,
@@ -328,7 +328,7 @@ cpkt_mix  #(
 ) u_cpkt_mix(
     .clk      ( clk           ),     
     .rst      ( rst           ),     
-    .cfg_limit_rate_en ( u_if_tcp_toe_reg.cfg_limit_rate_en ),
+    .cfg_limit_rate_en ( u_if_tcp_cfg_reg.cfg_limit_rate_en ),
     .in_vld   ( in_pd_vld_d4  ),
     .in_data  ( in_pd_dat_d4  ),
     .in_rdy   ( in_pd_rdy     ),

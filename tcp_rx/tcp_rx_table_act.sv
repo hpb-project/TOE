@@ -17,13 +17,13 @@ module tcp_rx_table_act #(
 ) (
         input  wire          clk        ,
         input   wire        rst        ,
-        if_cfg_reg_toe.sink u_if_cfg_reg_toe        ,
+        if_tcp_reg_toe.sink u_if_tcp_reg_toe        ,
         if_dbg_reg_toe      u_if_dbg_reg_toe        ,
         input   wire              fptr_fifo_naempty ,           
         input   wire              out_pkt_rdy       ,           
-        input   wire [1-1:0]       sync_info_vld      ,           
-        output  wire [1-1:0]       sync_info_rdy      ,           
-        input   wire [TAB_INFO_WID-1:0]   sync_info_dat      ,           
+        input   wire [1-1:0]       sync_msg_vld      ,           
+        output  wire [1-1:0]       sync_msg_rdy      ,           
+        input   wire [TAB_INFO_WID-1:0]   sync_msg_dat      ,           
         input   wire [1-1:0]        sync_rslt_vld      ,           
         output  wire [1-1:0]        sync_rslt_rdy      ,           
         input   wire [TAB_DWID-1:0] sync_rslt_dat      ,           
@@ -42,9 +42,9 @@ module tcp_rx_table_act #(
         input    wire [1-1:0]       loop_pd_rdy      ,           
         output   reg  [PDWID-1:0]   loop_pd_dat      ,           
         input    wire [LOOP_FIFO_AWID:0]   loop_fifo_cnt_free      ,  
-        output  reg  [1-1:0]       tab_wreq_fifo_wen     ,           
-        input   wire [1-1:0]       tab_wreq_fifo_nafull     ,           
-        output   reg  [TAB_AWID-1:0]     tab_wreq_fifo_wdata     ,           
+        output  reg  [1-1:0]       tab_wr_fifo_wen     ,           
+        input   wire [1-1:0]       tab_wr_fifo_nafull     ,           
+        output   reg  [TAB_AWID-1:0]     tab_wr_fifo_wdata     ,           
         output   reg  [1-1:0]       tab_wdat_fifo_wen     ,           
         input   wire [1-1:0]       tab_wdat_fifo_nafull     ,           
         output   reg  [TAB_DWID-1:0]     tab_wdat_fifo_wdata     ,           
@@ -182,8 +182,8 @@ fix_cpkt_unf #(
 )inst_info_unf(
         .clk         ( clk      ), 
         .rst        ( rst       ),
-        .cpkt_vld     ( sync_info_vld    ),  
-        .cpkt_dat     ( sync_info_dat    ),  
+        .cpkt_vld     ( sync_msg_vld    ),  
+        .cpkt_dat     ( sync_msg_dat    ),  
         .total_cpkt_vld ( total_info_vld    ), 
         .total_cpkt_dat ( total_info_dat    )
 );
@@ -260,12 +260,12 @@ always@(posedge clk or posedge rst ) begin
                                 && pd_tcp_sp==tcp_rx_table_key_sp
                                 && pd_tcp_dp=={nic_port[15:14], pd_tcp_fid[13:0]} 
                         ) ) ? 1'b1 : 1'b0  ;
-                        flag_seq_hit    <= ( (pd_chn_id[1:0]==2'h2||pd_chn_id[1:0]==2'h3) || pd_tcp_seq==tcp_rx_table_exp_remote_seq ) ? 1'b1 : 1'b0;
-                        flag_seq_less1  <= ( (pd_chn_id[1:0]==2'h2||pd_chn_id[1:0]==2'h3) || pd_tcp_seq==(tcp_rx_table_exp_remote_seq-1'b1) ) ? 1'b1 : 1'b0;
-                        flag_seq_hit_win    <= ( (pd_chn_id[1:0]==2'h2||pd_chn_id[1:0]==2'h3) || (pd_tcp_seq-tcp_rx_table_exp_remote_seq)<32'hf000 || (tcp_rx_table_exp_remote_seq-pd_tcp_seq)<32'hf000 ) ? 1'b1 : 1'b0;
-                        flag_seq_out_order  <= ( flag_sess_vld==1'b1 && pd_fwd==VAL_FWD_TBD && u_if_cfg_reg_toe.cfg_toe_mode_reorder==1'b0 && (pd_chn_id[1:0]==2'h0||pd_chn_id[1:0]==2'h1) && reorder_cnt_reg<8'd20 
-                        && tcp_payload_len!='0 && (pd_tcp_seq!=tcp_rx_table_exp_remote_seq) && (pd_tcp_seq-tcp_rx_table_exp_remote_seq)<32'h4000 && pd_ip_ttl>8'h1) ? 1'b1 : 1'b0;
-                        flag_seq_miss  <= ( pd_tcp_seq!=tcp_rx_table_exp_remote_seq ) ? 1'b1 : 1'b0; 
+                        flag_seq_hit    <= ( (pd_chn_id[1:0]==2'h2||pd_chn_id[1:0]==2'h3) || pd_tcp_seqn==tcp_rx_table_exp_remote_seq ) ? 1'b1 : 1'b0;
+                        flag_seq_less1  <= ( (pd_chn_id[1:0]==2'h2||pd_chn_id[1:0]==2'h3) || pd_tcp_seqn==(tcp_rx_table_exp_remote_seq-1'b1) ) ? 1'b1 : 1'b0;
+                        flag_seq_hit_win    <= ( (pd_chn_id[1:0]==2'h2||pd_chn_id[1:0]==2'h3) || (pd_tcp_seqn-tcp_rx_table_exp_remote_seq)<32'hf000 || (tcp_rx_table_exp_remote_seq-pd_tcp_seqn)<32'hf000 ) ? 1'b1 : 1'b0;
+                        flag_seq_out_order  <= ( flag_sess_vld==1'b1 && pd_fwd==VAL_FWD_TBD && u_if_tcp_reg_toe.cfg_toe_mode_reorder==1'b0 && (pd_chn_id[1:0]==2'h0||pd_chn_id[1:0]==2'h1) && reorder_cnt_reg<8'd20 
+                        && tcp_payload_len!='0 && (pd_tcp_seqn!=tcp_rx_table_exp_remote_seq) && (pd_tcp_seqn-tcp_rx_table_exp_remote_seq)<32'h4000 && pd_ip_ttl>8'h1) ? 1'b1 : 1'b0;
+                        flag_seq_miss  <= ( pd_tcp_seqn!=tcp_rx_table_exp_remote_seq ) ? 1'b1 : 1'b0; 
                         flag_cpu_syn    <= flag_pkt_syn;
                         flag_cpu_fin     <= flag_pkt_fin;
                         flag_pkt_syn     <= ( pd_fwd==VAL_FWD_TBD && pd_ip_prtl==VAL_PRTL_TCP && {pd_tcp_urg, pd_tcp_ack, pd_tcp_psh, pd_tcp_rst, pd_tcp_syn, pd_tcp_fin}==6'h02 
@@ -293,10 +293,10 @@ always@(posedge clk or posedge rst ) begin
                         flag_app_bp <= 1'b0;
                 end
                 else begin
-                        if( moe_rx_fifo_st.free_rcv_msg_id_cnt < u_if_cfg_reg_toe.cfg_msg_bd_low_th ) begin
+                        if( moe_rx_fifo_st.free_rcv_msg_id_cnt < u_if_tcp_reg_toe.cfg_msg_bd_low_th ) begin
                                 flag_app_bp <= 1'b1;
                         end
-                        else if( moe_rx_fifo_st.free_rcv_msg_id_cnt > u_if_cfg_reg_toe.cfg_msg_bd_high_th ) begin
+                        else if( moe_rx_fifo_st.free_rcv_msg_id_cnt > u_if_tcp_reg_toe.cfg_msg_bd_high_th ) begin
                                 flag_app_bp <= 1'b0;
                         end
                 end
@@ -308,7 +308,7 @@ always@(posedge clk or posedge rst ) begin
                 end
                 else begin
                         if( total_pd_vld==1'b1 )begin
-                                flag_app_rdy <= (drop_pkt_rdy==1'b1 || flag_app_bp==1'b1 || u_if_cfg_reg_toe.cfg_toe_mode_ins_bp==1'b1) ? 1'b0 : 1'b1; 
+                                flag_app_rdy <= (drop_pkt_rdy==1'b1 || flag_app_bp==1'b1 || u_if_tcp_reg_toe.cfg_toe_mode_ins_bp==1'b1) ? 1'b0 : 1'b1; 
                                 flag_loop_rdy <= loop_pd_rdy; 
                         end
                 end
@@ -363,9 +363,9 @@ always@(posedge clk or posedge rst ) begin
         wire         out_ack_vld_tmp1        ;
         assign new_rcv_local_ackn = ( pd_tcp_ack==1'b0 ) ? 32'hf000_0000 : ( pd_tcp_ack==1'b1 && tcp_rx_table_ack==1'b0 ) ? pd_tcp_ackn : 
         ( pd_tcp_ack==1'b1 && tcp_rx_table_ack==1'b1 && (pd_tcp_ackn-tcp_rx_table_rcv_local_ackn)<32'h1000_0000 ) ? pd_tcp_ackn : tcp_rx_table_rcv_local_ackn  ;
-        assign new_exp_remote_seq = ( pd_tcp_syn==1'b1 )             ? ( pd_tcp_seq + 1'b1 ) : 
-        ( pd_tcp_seq==tcp_rx_table_exp_remote_seq && flag_pkt_fin==1'b1 )  ? ( pd_tcp_seq + 1'b1 ) : 
-        ( pd_tcp_seq==tcp_rx_table_exp_remote_seq )  ? ( tcp_rx_table_exp_remote_seq + pd_plen - pd_hdr_len - pd_tail_len ) 
+        assign new_exp_remote_seq = ( pd_tcp_syn==1'b1 )             ? ( pd_tcp_seqn + 1'b1 ) : 
+        ( pd_tcp_seqn==tcp_rx_table_exp_remote_seq && flag_pkt_fin==1'b1 )  ? ( pd_tcp_seqn + 1'b1 ) : 
+        ( pd_tcp_seqn==tcp_rx_table_exp_remote_seq )  ? ( tcp_rx_table_exp_remote_seq + pd_plen - pd_hdr_len - pd_tail_len ) 
         : tcp_rx_table_exp_remote_seq ;
         always @ ( posedge clk or posedge rst ) begin
                 if( rst==1'b1 )begin
@@ -380,7 +380,7 @@ always@(posedge clk or posedge rst ) begin
         wire flag_allow_snd_dup_ack;
         assign flag_allow_snd_dup_ack = ( (flag_sess_hit==1'b1) && ( tcp_rx_table_snd_dup_ack_cnt<1 || (gbl_sec_cnt[16-1:0] - tcp_rx_table_rx_pkt_hittm)>2 ) ) ? 1'b1 : 1'b0;
         wire [7:0] min_win_unit ; 
-        assign min_win_unit = (u_if_cfg_reg_toe.cfg_toe_mode[5]==1'b1 && tcp_rx_table_win_scale!=4'h0) ? 8'h01 : (u_if_cfg_reg_toe.cfg_toe_mode[4]==1'b1 && tcp_rx_table_win_scale!=4'h0) ? 8'h04 : 8'h08  ; 
+        assign min_win_unit = (u_if_tcp_reg_toe.cfg_toe_mode[5]==1'b1 && tcp_rx_table_win_scale!=4'h0) ? 8'h01 : (u_if_tcp_reg_toe.cfg_toe_mode[4]==1'b1 && tcp_rx_table_win_scale!=4'h0) ? 8'h04 : 8'h08  ; 
         always @ ( * ) begin
                 if( tbl_act_reg==VAL_TBL_ACT_NEW ) begin
                         new_rx_table_vld          = 1'b1                ;
@@ -389,13 +389,13 @@ always@(posedge clk or posedge rst ) begin
                         new_rx_table_ack          = 1'b0                ;
                         new_rx_table_fin          = 1'b0      ;
                         new_rx_table_rst          = 1'b0  ;
-                        new_rx_table_win_scale    = ( u_if_cfg_reg_toe.cfg_toe_mode[4]==1'b0&&u_if_cfg_reg_toe.cfg_toe_mode[5]==1'b0) ? 4'h0 : pd_win_scale[3:0];
+                        new_rx_table_win_scale    = ( u_if_tcp_reg_toe.cfg_toe_mode[4]==1'b0&&u_if_tcp_reg_toe.cfg_toe_mode[5]==1'b0) ? 4'h0 : pd_win_scale[3:0];
                         new_rx_table_outorder_cnt         = 0                              ;
                         new_rx_table_rx_pkt_hittm         = gbl_sec_cnt[16-1:0]            ;
                         new_rx_table_key_sip              = pd_ip_sip              ;
                         new_rx_table_key_sp               = pd_tcp_sp              ;
                         new_rx_table_key_smac             = pd_smac              ;
-                        new_rx_table_ini_remote_seq      = pd_tcp_seq              ;
+                        new_rx_table_ini_remote_seq      = pd_tcp_seqn              ;
                         new_rx_table_exp_remote_seq      = new_exp_remote_seq_reg        ;
                         new_rx_table_rcv_local_ackn       = new_rcv_local_ackn_reg        ;
                         new_rx_table_rcv_remote_win       = pd_tcp_win             ;  
@@ -501,12 +501,12 @@ always@(posedge clk or posedge rst ) begin
         always @ ( posedge clk or posedge rst ) begin
                 if( rst==1'b1 )begin
                         tab_wdat_fifo_wdata <= 0;
-                        tab_wreq_fifo_wdata <= 0;
+                        tab_wr_fifo_wdata <= 0;
                 end
                 else begin
                         if( flag_out_step[2]==1'b1 ) begin
                                 tab_wdat_fifo_wdata <= all_new_rslt_dat_reg[ TAB_DWID*1+000 +: 128 ]  ;
-                                tab_wreq_fifo_wdata <= {pd_tcp_fid[0+:(TAB_AWID-1)],1'b0};
+                                tab_wr_fifo_wdata <= {pd_tcp_fid[0+:(TAB_AWID-1)],1'b0};
                         end
                         else begin
                                 tab_wdat_fifo_wdata <= all_new_rslt_dat_reg[ TAB_DWID*0+000 +: 128 ]  ;
@@ -516,20 +516,20 @@ always@(posedge clk or posedge rst ) begin
         always @ ( posedge clk or posedge rst ) begin
                 if( rst==1'b1 )begin
                         tab_wdat_fifo_wen <= 0;
-                        tab_wreq_fifo_wen <= 0;
+                        tab_wr_fifo_wen <= 0;
                 end
                 else begin
                         if( flag_out_step[2]==1'b1 && tbl_act_reg!=VAL_TBL_ACT_NUL ) begin
                                 tab_wdat_fifo_wen <= 1'b1;
-                                tab_wreq_fifo_wen <= 1'b1;
+                                tab_wr_fifo_wen <= 1'b1;
                         end
                         else if( flag_out_step[3]==1'b1 && tbl_act_reg!=VAL_TBL_ACT_NUL ) begin
                                 tab_wdat_fifo_wen <= 1'b1;
-                                tab_wreq_fifo_wen <= 1'b0;
+                                tab_wr_fifo_wen <= 1'b0;
                         end
                         else begin
                                 tab_wdat_fifo_wen <= 1'b0;
-                                tab_wreq_fifo_wen <= 1'b0;
+                                tab_wr_fifo_wen <= 1'b0;
                         end
                 end
         end
@@ -549,15 +549,15 @@ always @ ( * ) begin
         else if( pd_fwd==VAL_FWD_TBD ) begin
                 if(pd_chn_id[1:0]==2'h2 ) begin 
                         new_pd_fwd    = VAL_FWD_TOE    ;
-                        if(pd_tcp_seq[31:30] == 2'h1)
+                        if(pd_tcp_seqn[31:30] == 2'h1)
                         begin
                                 new_pd_ptyp    = VAL_PTYP_AGE_MID ;
                         end
-                        else if(pd_tcp_seq[31:30] == 2'h2)
+                        else if(pd_tcp_seqn[31:30] == 2'h2)
                         begin
                                 new_pd_ptyp    = VAL_PTYP_AGE_WBD ;
                         end
-                        else if(pd_tcp_seq[31:30] == 2'h3)
+                        else if(pd_tcp_seqn[31:30] == 2'h3)
                         begin
                                 new_pd_ptyp    = VAL_PTYP_AGE_RBD ;
                         end
@@ -630,7 +630,7 @@ always @ ( * ) begin
                         new_pd_fwd    = VAL_FWD_DROP    ;
                         new_pd_ptyp    = VAL_PTYP_DROP_SEQN_ERR  ;
                 end
-                else if( flag_sess_vld==1'b1 && u_if_cfg_reg_toe.cfg_toe_mode_sess_ne==1'b0 ) begin
+                else if( flag_sess_vld==1'b1 && u_if_tcp_reg_toe.cfg_toe_mode_sess_ne==1'b0 ) begin
                         new_pd_fwd    = VAL_FWD_DROP    ;
                         new_pd_ptyp    = VAL_PTYP_DROP_SESS_NOTEXIST  ;
                 end
@@ -646,7 +646,7 @@ always @ ( * ) begin
 end
         wire  [1-1:0]       dly_pd_vld   ;         
         wire  [PDWID-1:0]     dly_pd_dat   ;         
-        data_pipe #(
+        data_dly #(
                 .DWID    ( PDWID+1   ),
                 .DLY_NUM ( 7         )
         )
@@ -757,9 +757,9 @@ end
                         end
                 end
         end
-assign sync_info_rdy = (out_pd_rdy==1'b1 || drop_pkt_rdy==1'b1) & out_pmem_rdy==1'b1 & tab_wreq_fifo_nafull & tab_wdat_fifo_nafull & (~u_if_cfg_reg_toe.cfg_toe_mode_ins_bp1);
-assign sync_rslt_rdy = (out_pd_rdy==1'b1 || drop_pkt_rdy==1'b1) & out_pmem_rdy==1'b1 & tab_wreq_fifo_nafull & tab_wdat_fifo_nafull & (~u_if_cfg_reg_toe.cfg_toe_mode_ins_bp1);
-assign sync_pd_rdy   = (out_pd_rdy==1'b1 || drop_pkt_rdy==1'b1) & out_pmem_rdy==1'b1 & tab_wreq_fifo_nafull & tab_wdat_fifo_nafull & (~u_if_cfg_reg_toe.cfg_toe_mode_ins_bp1);
+assign sync_msg_rdy = (out_pd_rdy==1'b1 || drop_pkt_rdy==1'b1) & out_pmem_rdy==1'b1 & tab_wr_fifo_nafull & tab_wdat_fifo_nafull & (~u_if_tcp_reg_toe.cfg_toe_mode_ins_bp1);
+assign sync_rslt_rdy = (out_pd_rdy==1'b1 || drop_pkt_rdy==1'b1) & out_pmem_rdy==1'b1 & tab_wr_fifo_nafull & tab_wdat_fifo_nafull & (~u_if_tcp_reg_toe.cfg_toe_mode_ins_bp1);
+assign sync_pd_rdy   = (out_pd_rdy==1'b1 || drop_pkt_rdy==1'b1) & out_pmem_rdy==1'b1 & tab_wr_fifo_nafull & tab_wdat_fifo_nafull & (~u_if_tcp_reg_toe.cfg_toe_mode_ins_bp1);
 reg             out_ack_vld_d1  ;
 reg             out_ack_vld_d2  ;
 reg [3:0]       cnt_ack_vld     ;
@@ -772,7 +772,7 @@ always@( posedge clk or posedge rst ) begin
                 cnt_ack_vld <= 4'h0;
         end
         else begin
-                if(cnt_ack_vld==u_if_cfg_reg_toe.cfg_dupack_mode[3:0])begin
+                if(cnt_ack_vld==u_if_tcp_reg_toe.cfg_dupack_mode[3:0])begin
                         cnt_ack_vld <= 4'h0;
                 end
                 else if( out_ack_vld==1'b1 ) begin
@@ -785,10 +785,10 @@ always@( posedge clk or posedge rst ) begin
                 out_ack_vld <= 1'b0;
         end
         else begin
-                if(cnt_ack_vld==u_if_cfg_reg_toe.cfg_dupack_mode[3:0])begin
+                if(cnt_ack_vld==u_if_tcp_reg_toe.cfg_dupack_mode[3:0])begin
                         out_ack_vld <= 1'b0;
                 end
-                else if( out_ack_vld_tmp==1'b1 && out_ack_rdy==1'b1 && u_if_cfg_reg_toe.cfg_toe_mode_dupack_en==1'b1 ) begin
+                else if( out_ack_vld_tmp==1'b1 && out_ack_rdy==1'b1 && u_if_tcp_reg_toe.cfg_toe_mode_dupack_en==1'b1 ) begin
                         out_ack_vld <= 1'b1;
                 end
         end
@@ -835,29 +835,29 @@ end
                         max_tcp_rx_table_exp_remote_seq <= tcp_rx_table_exp_remote_seq;
                 end
         end
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_pd_cnt   ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( total_pd_vld==1'b1 ),                                      .dbg_cnt( in_pd_cnt    ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_pd_cnt_fid0 ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( total_pd_vld==1'b1&&pd_tcp_fid==16'h000a ),                .dbg_cnt( in_pd_cnt_fid0 ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_pd_cnt_fid1 ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( total_pd_vld==1'b1&&pd_tcp_fid==16'h000b ),                .dbg_cnt( in_pd_cnt_fid1 ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_bp_drop_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_DROP_APP_BP ),          .dbg_cnt( pkt_bp_drop_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_drop_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_DROP  && new_pd_ptyp!= VAL_PTYP_DROP_ACK ),          .dbg_cnt( pkt_drop_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_mac_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_MAC  ),          .dbg_cnt( pkt_mac_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_toe_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_TOE ),          .dbg_cnt( pkt_toe_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_app_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_APP ),          .dbg_cnt( pkt_app_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_syn_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_syn ),                             .dbg_cnt( in_syn_cnt   ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_ack_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_ack ),                             .dbg_cnt( in_ack_cnt   ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_fin_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_fin ),                             .dbg_cnt( in_fin_cnt   ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_rep_fin_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_fin & flag_seq_less1 ),                             .dbg_cnt( in_rep_fin_cnt   ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_rst_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_rst ),                             .dbg_cnt( in_rst_cnt   ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_dat_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_dat ),                             .dbg_cnt( in_dat_cnt   ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_tbl_new_cnt ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( tab_wreq_fifo_wen==1'b1 && tbl_act_reg==VAL_TBL_ACT_NEW ), .dbg_cnt( tbl_new_cnt  ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_tbl_del_cnt ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( tab_wreq_fifo_wen==1'b1 && tbl_act_reg==VAL_TBL_ACT_DEL ), .dbg_cnt( tbl_del_cnt  ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_dup_ack_cnt ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_PKT_DUP_ACK ),   .dbg_cnt( dup_ack_cnt  ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(0) ) u_dbg_bp_dup_ack_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_ack_vld==1'b1 ),          .dbg_cnt( bp_dup_ack_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_drop_dup_ack_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_ack_vld_tmp==1'b1 && out_ack_rdy==1'b0 ),          .dbg_cnt( drop_dup_ack_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_seq_err_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_DROP_SEQN_ERR ),          .dbg_cnt( seq_err_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_out_order_drop_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_DROP_DUP_ACK ),          .dbg_cnt( out_order_drop_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_out_syn_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_PKT_SYN ),          .dbg_cnt( out_syn_cnt ) );
-        dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_syn2rst_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_cfg_reg_toe.cfg_clr_cnt ), .add_cnt( flag_cpu_syn==1'b1 && out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_PKT_RST ),          .dbg_cnt( syn2rst_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_pd_cnt   ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( total_pd_vld==1'b1 ),                                      .dbg_cnt( in_pd_cnt    ) );
+ //      dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_pd_cnt_fid0 ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( total_pd_vld==1'b1&&pd_tcp_fid==16'h000a ),                .dbg_cnt( in_pd_cnt_fid0 ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_pd_cnt_fid1 ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( total_pd_vld==1'b1&&pd_tcp_fid==16'h000b ),                .dbg_cnt( in_pd_cnt_fid1 ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_bp_drop_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_DROP_APP_BP ),          .dbg_cnt( pkt_bp_drop_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_drop_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_DROP  && new_pd_ptyp!= VAL_PTYP_DROP_ACK ),          .dbg_cnt( pkt_drop_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_mac_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_MAC  ),          .dbg_cnt( pkt_mac_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_toe_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_TOE ),          .dbg_cnt( pkt_toe_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_app_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_fwd==VAL_FWD_APP ),          .dbg_cnt( pkt_app_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_syn_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_syn ),                             .dbg_cnt( in_syn_cnt   ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_ack_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_ack ),                             .dbg_cnt( in_ack_cnt   ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_fin_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_fin ),                             .dbg_cnt( in_fin_cnt   ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_rep_fin_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_fin & flag_seq_less1 ),                             .dbg_cnt( in_rep_fin_cnt   ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_rst_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_rst ),                             .dbg_cnt( in_rst_cnt   ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_in_dat_cnt  ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_step[3] & flag_pkt_dat ),                             .dbg_cnt( in_dat_cnt   ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_tbl_new_cnt ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( tab_wr_fifo_wen==1'b1 && tbl_act_reg==VAL_TBL_ACT_NEW ), .dbg_cnt( tbl_new_cnt  ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_tbl_del_cnt ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( tab_wr_fifo_wen==1'b1 && tbl_act_reg==VAL_TBL_ACT_DEL ), .dbg_cnt( tbl_del_cnt  ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_dup_ack_cnt ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_PKT_DUP_ACK ),   .dbg_cnt( dup_ack_cnt  ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(0) ) u_dbg_bp_dup_ack_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_ack_vld==1'b1 ),          .dbg_cnt( bp_dup_ack_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_drop_dup_ack_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_ack_vld_tmp==1'b1 && out_ack_rdy==1'b0 ),          .dbg_cnt( drop_dup_ack_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_seq_err_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_DROP_SEQN_ERR ),          .dbg_cnt( seq_err_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_out_order_drop_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_DROP_DUP_ACK ),          .dbg_cnt( out_order_drop_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_out_syn_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_PKT_SYN ),          .dbg_cnt( out_syn_cnt ) );
+ //       dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_syn2rst_cnt    ( .clk(clk), .rst(rst), .clr_cnt(u_if_tcp_reg_toe.cfg_clr_cnt ), .add_cnt( flag_cpu_syn==1'b1 && out_pd_vld==1'b1 && new_pd_ptyp==VAL_PTYP_PKT_RST ),          .dbg_cnt( syn2rst_cnt ) );
         assign dbg_sig = { max_tcp_rx_table_exp_remote_seq };
         assign dbg_sig1 = { tbl_new_cnt[31:00], tbl_del_cnt[31:00] };
         assign u_if_dbg_reg_toe.tcpr_in_pd_cnt          = in_pd_cnt              ;
@@ -874,12 +874,12 @@ end
         assign u_if_dbg_reg_toe.tcpr_in_rep_fin_cnt     = in_rep_fin_cnt         ;
         assign u_if_dbg_reg_toe.tcpr_in_rst_cnt         = in_rst_cnt             ;
         assign u_if_dbg_reg_toe.tcpr_in_dat_cnt         = in_dat_cnt             ;
-        assign u_if_dbg_reg_toe.tcp_rx_table_new_cnt        = tbl_new_cnt            ;
-        assign u_if_dbg_reg_toe.tcp_rx_table_del_cnt        = tbl_del_cnt            ;
+        assign u_if_dbg_reg_toe.tcpr_tbl_new_cnt        = tbl_new_cnt            ;
+        assign u_if_dbg_reg_toe.tcpr_tbl_del_cnt        = tbl_del_cnt            ;
         assign u_if_dbg_reg_toe.tcpr_dup_ack_cnt        = dup_ack_cnt            ;
         assign u_if_dbg_reg_toe.tcpr_bp_dup_ack_cnt     = bp_dup_ack_cnt         ;
         assign u_if_dbg_reg_toe.tcpr_drop_dup_ack_cnt   = drop_dup_ack_cnt       ;
-        assign u_if_dbg_reg_toe.tcpr_seq_err_cnt       = seq_err_cnt           ;
+        assign u_if_dbg_reg_toe.tcpr_seqn_err_cnt       = seq_err_cnt           ;
         assign u_if_dbg_reg_toe.tcpr_reorder_cnt        = reorder_cnt_reg        ;
         assign u_if_dbg_reg_toe.tcpr_out_order_drop_cnt = out_order_drop_cnt     ;
         assign u_if_dbg_reg_toe.tcpr_out_syn_cnt        = out_syn_cnt            ;

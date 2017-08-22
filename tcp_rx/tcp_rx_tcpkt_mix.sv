@@ -6,7 +6,7 @@ module tcp_rx_tcpkt_mix #(
 ) (
 		input	  wire				           clk		 	                          ,
 		input 	wire				           rst			                          ,
-    if_tcp_toe_reg.sink            u_if_tcp_toe_reg ,
+    if_tcp_reg_toe.sink            u_if_tcp_reg_toe ,
 		input 	wire				           in_pd_vld		                      ,
 		input 	wire	[PDWID-1:0]		       in_pd_dat		                      ,
 		output 	wire				           in_pd_rdy 		                      ,
@@ -15,8 +15,8 @@ module tcp_rx_tcpkt_mix #(
 		input 	wire				           out_pd_rdy	    	                  ,
 		output  wire	[DBG_WID-1:0]		   dbg_sig			
 );
-wire  [1-1:0] whole_pd_vld;
-wire  [PDWID*PDSZ-1:0] whole_pd_dat;
+wire  [1-1:0] total_pd_vld;
+wire  [PDWID*PDSZ-1:0] total_pd_dat;
 cpkt_unf #(
 	.DWID			( PDWID		),
 	.FCMWID			( 1 		),
@@ -28,19 +28,19 @@ cpkt_unf #(
 )inst_cpkt_unf(
 	.clk     		      ( clk			        ), 
 	.rst    		      ( rst	 		        ),
-	.cpkt_vld 		    ( in_pd_vld		    ),	
-	.cpkt_dat 		    ( in_pd_dat		    ),	
-	.cpkt_msg 		    ( 1'b0			      ),	
- 	.whole_cpkt_vld 	( whole_pd_vld  	), 
-	.whole_cpkt_dat 	( whole_pd_dat  	), 
-	.whole_cpkt_msg 	(       		      ) 
+	.cell_vld 		    ( in_pd_vld		    ),	
+	.cell_dat 		    ( in_pd_dat		    ),	
+	.cell_msg 		    ( 1'b0			      ),	
+ 	.total_cpkt_vld 	( total_pd_vld  	), 
+	.total_cpkt_dat 	( total_pd_dat  	), 
+	.total_cpkt_msg 	(       		      ) 
 );
 `include "common_define_value.v"
 `include "pkt_des_unpack.v"
 wire				           in_pd_vld_d4		                      ;
 wire	[PDWID-1:0]		   in_pd_dat_d4		                      ;
-ctrl_pipe #( .DWID(1)    , .DLY_NUM(PDSZ) ) u_ctrl_in_pd_vld( .clk(clk), .rst(rst), .din( in_pd_vld ), .dout( in_pd_vld_d4 ) );
-data_pipe #( .DWID(PDWID), .DLY_NUM(PDSZ) ) u_ctrl_in_pd_dat( .clk(clk), .rst(rst), .din( in_pd_dat ), .dout( in_pd_dat_d4 ) );
+ctrl_dly #( .DWID(1)    , .DLY_NUM(PDSZ) ) u_ctrl_in_pd_vld( .clk(clk), .rst(rst), .din( in_pd_vld ), .dout( in_pd_vld_d4 ) );
+data_dly #( .DWID(PDWID), .DLY_NUM(PDSZ) ) u_ctrl_in_pd_dat( .clk(clk), .rst(rst), .din( in_pd_dat ), .dout( in_pd_dat_d4 ) );
 wire [15:0]    pkt_fid;
 assign pkt_fid = (pd_fwd==VAL_FWD_MAC) ? {12'h0, pd_chn_id[3:0]} : pd_tcp_fid;
 cpkt_mix  #(
@@ -57,7 +57,7 @@ cpkt_mix  #(
 ) u_cpkt_mix(
     .clk      ( clk           ),     
     .rst      ( rst           ),     
-    .cfg_limit_rate_en ( u_if_tcp_toe_reg.cfg_limit_rate_en ),
+    .cfg_limit_rate_en ( u_if_tcp_reg_toe.cfg_limit_rate_en ),
     .in_vld   ( in_pd_vld_d4  ),
     .in_data  ( in_pd_dat_d4  ),
     .in_rdy   ( in_pd_rdy     ),

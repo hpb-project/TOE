@@ -58,7 +58,7 @@ bfifo #(
     .nfull         (                         ),
     .woverflow     ( fst_in_woverflow           ),
     .cnt_free      ( fst_in_fifo_cnt_free       ),
-    .rd           ( fst_in_fifo_rd            ),
+    .ren           ( fst_in_fifo_rd            ),
     .rdata         ( fst_in_fifo_rdata          ),
     .nempty        ( fst_in_fifo_nempty         ),
     .naempty       (                         ),
@@ -83,7 +83,7 @@ bfifo #(
     .nfull         (                         ),
     .woverflow     ( snd_in_woverflow           ),
     .cnt_free      ( snd_in_fifo_cnt_free       ),
-    .rd           ( snd_in_fifo_rd            ),
+    .ren           ( snd_in_fifo_rd            ),
     .rdata         ( snd_in_fifo_rdata          ),
     .nempty        ( snd_in_fifo_nempty         ),
     .naempty       (                         ),
@@ -92,6 +92,7 @@ bfifo #(
     .dbg_sig       ( dbg_sig[27:24]          )
 );
 assign snd_in_rd = snd_in_fifo_rd ;
+
 cpkt_mux #(
     .CHN0_HPRIORY ( IN1_HPRIORITY )   ,   
     .UNUM     (2          ),
@@ -102,12 +103,12 @@ cpkt_mux #(
 ) u_cpkt_mux(
     .clk              ( clk                                     ) ,
     .rst              ( rst                                     ) ,
-    .in_cpkt_rd      ({ snd_in_fifo_rd   , fst_in_fifo_rd    }     ),
+    .in_cpkt_ren      ({ snd_in_fifo_rd   , fst_in_fifo_rd    }     ),
     .in_cpkt_rdata    ({ snd_in_fifo_rdata , fst_in_fifo_rdata  }     ),
     .in_cpkt_nempty   ({ snd_in_fifo_nempty, fst_in_fifo_nempty }     ),
-    .out_msg_wen     ( out_msg_vld                            ),
-    .out_msg_wdata   ( out_msg_data                           ),
-    .out_msg_nafull  ( 1'b1                                    ),
+    .out_info_wen     ( out_msg_vld                            ),
+    .out_info_wdata   ( out_msg_data                           ),
+    .out_info_nafull  ( 1'b1                                    ),
     .out_cpkt_wen     ( out_vld                                 ),
     .out_cpkt_wdata   ( out_data                                ),
     .out_cpkt_nafull  ( out_rdy                                 ),
@@ -115,7 +116,7 @@ cpkt_mux #(
 );
 wire [31:0]    fst_in_cnt      ;
 wire [31:0]    snd_in_cnt      ;
-dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_fst_in_cnt   ( .clk(clk), .rst(rst), .clr_cnt(clr_cnt), .add_cnt( fst_in_vld ),                                      .dbg_cnt( fst_in_cnt    ) );
-dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_snd_in_cnt   ( .clk(clk), .rst(rst), .clr_cnt(clr_cnt), .add_cnt( snd_in_vld ),                                      .dbg_cnt( snd_in_cnt    ) );
+//dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_fst_in_cnt   ( .clk(clk), .rst(rst), .clr_cnt(clr_cnt), .add_cnt( fst_in_vld ),                                      .dbg_cnt( fst_in_cnt    ) );
+//dbg_cnt #( .DWID(32), .LEVEL_EDGE(1) ) u_dbg_snd_in_cnt   ( .clk(clk), .rst(rst), .clr_cnt(clr_cnt), .add_cnt( snd_in_vld ),                                      .dbg_cnt( snd_in_cnt    ) );
 assign dbg_sig[23:0] = { fst_in_cnt[11:0], snd_in_cnt[11:0] };
 endmodule

@@ -1,26 +1,26 @@
 `timescale 1ns / 1ps
 module tcp_rx_tab_req #(
 		parameter    PDWID        = 128 			,               
-		parameter    PDSZ         = 4 			    	,               
+		parameter    PDSZ         = 4 			    ,               
 		parameter    TAB_AWID     = 12 				, 		
 		parameter    REQ_SZ       = 1 				, 		
 		parameter    TAB_INFO_WID = 16 				, 		
 		parameter    DBG_WID      = 32 				 		
 ) (
-		input	wire				clk		 	,
-		input 	wire				rst			,
-		input 	wire				in_pd_vld		,
-		input 	wire	[PDWID-1:0]		in_pd_dat		,
-		output 	wire				in_pd_rdy 		,
-		output 	reg 				tab_rreq_fifo_wen	,
-		output 	reg 	[TAB_AWID-1:0]		tab_rreq_fifo_wdata	,
-		input 	wire				tab_rreq_fifo_nafull	,
-		output 	reg 				pd_fifo_wen		,
-		output 	reg	[PDWID-1:0]		pd_fifo_wdata		,
-		input 	wire				pd_fifo_nafull		,
-		output 	reg				tab_info_fifo_wen	,
-		output 	reg	[TAB_INFO_WID-1:0]	tab_info_fifo_wdata	,
-		input 	wire				tab_info_fifo_nafull	,
+		input	wire				        clk		 	            ,
+		input 	wire				        rst			            ,
+		input 	wire				        in_pd_vld		        ,
+		input 	wire	[PDWID-1:0]		    in_pd_dat		        ,
+		output 	wire				        in_pd_rdy 		        ,
+		output 	reg 				        tab_rreq_fifo_wen	    ,
+		output 	reg 	[TAB_AWID-1:0]		tab_rreq_fifo_wdata	    ,
+		input 	wire				        tab_rreq_fifo_nafull	,
+		output 	reg 				        pd_fifo_wen		        ,
+		output 	reg	[PDWID-1:0]		        pd_fifo_wdata		    ,
+		input 	wire				        pd_fifo_nafull		    ,
+		output 	reg				            tab_msg_fifo_wen	    ,
+		output 	reg	[TAB_INFO_WID-1:0]	    tab_msg_fifo_wdata	    ,
+		input 	wire				        tab_msg_fifo_nafull	,
 		output  wire	[DBG_WID-1:0]		dbg_sig			
 );
 localparam VAL_FWD_TBD   = 0;
@@ -40,9 +40,9 @@ cpkt_unf #(
 )inst_cpkt_unf(
 	.clk     		( clk			), 
 	.rst    		( rst	 		),
-	.cpkt_vld 		( in_pd_vld		),	
-	.cpkt_dat 		( in_pd_dat		),	
-	.cpkt_msg 		( 1'b0			),	
+	.cell_vld 		( in_pd_vld		),	
+	.cell_dat 		( in_pd_dat		),	
+	.cell_msg 		( 1'b0			),	
     .total_cpkt_vld 	( total_pd_vld  	), 
 	.total_cpkt_dat 	( total_pd_dat  	), 
 	.total_cpkt_msg 	(       		) 
@@ -51,12 +51,12 @@ cpkt_unf #(
 wire 	[16-1:0]		fid_tmp;
 always @ ( posedge clk or posedge rst ) begin
 	if( rst==1'b1 )begin
-	    tab_info_fifo_wen 	<= 0;
-	    tab_info_fifo_wdata <= 0;
+	    tab_msg_fifo_wen 	<= 0;
+	    tab_msg_fifo_wdata <= 0;
 	end
 	else begin
-	    tab_info_fifo_wen 	<= total_pd_vld;
-	    tab_info_fifo_wdata <= (pd_fwd==VAL_FWD_TBD) ? {fid_tmp[13:0], 2'b11} : {fid_tmp[13:0], 2'b01};  
+	    tab_msg_fifo_wen 	<= total_pd_vld;
+	    tab_msg_fifo_wdata <= (pd_fwd==VAL_FWD_TBD) ? {fid_tmp[13:0], 2'b11} : {fid_tmp[13:0], 2'b01};  
 	end
 end
 reg [15:0] pol_fid;
@@ -119,6 +119,6 @@ always @ ( posedge clk or posedge rst ) begin
 		end
 	end
 end
-assign in_pd_rdy = ( tab_info_fifo_nafull==1'b1 && pd_fifo_nafull==1'b1 && tab_rreq_fifo_nafull==1'b1 ) ? 1'b1 : 1'b0;
+assign in_pd_rdy = ( tab_msg_fifo_nafull==1'b1 && pd_fifo_nafull==1'b1 && tab_rreq_fifo_nafull==1'b1 ) ? 1'b1 : 1'b0;
 assign dbg_sig = 32'h0;
 endmodule
